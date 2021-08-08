@@ -87,6 +87,17 @@ Resources:
         Variables:
           REGION: !Ref AWS::Region
           TABLE_NAME: !Ref KansousenTable
+  RecentKifuFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/kifu/recent
+      Handler: kifu
+      Runtime: go1.x
+      Policies: !Ref KansousenTablePolicy
+      Environment:
+        Variables:
+          REGION: !Ref AWS::Region
+          TABLE_NAME: !Ref KansousenTable
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -204,6 +215,7 @@ Resources:
         Variables:
           KIFU_FUNC_ARN: !GetAtt KifuFunction.Arn
           REGION: !Ref AWS::Region
+          CONFIG_URL: !Sub "https://${SiteDomainName}/config.json"
       Events:
         KifuApiEvent:
           Type: Api
@@ -310,6 +322,9 @@ Outputs:
   KifuFunction:
     Description: "KifuFunction Arn"
     Value: !GetAtt KifuFunction.Arn
+  RecentKifuFunction:
+    Description: "RecentKifuFunction Arn"
+    Value: !GetAtt RecentKifuFunction.Arn
   UserPoolClientID:
     Description: "User Pool Client ID"
     Value: !Ref CognitoUserPoolClient

@@ -15,6 +15,7 @@ import (
 
 	apipb "github.com/yunomu/kansousen/proto/kifu"
 
+	"github.com/yunomu/kansousen/lib/config"
 	"github.com/yunomu/kansousen/lib/lambda/apihandler"
 	"github.com/yunomu/kansousen/lib/lambda/lambdarpc"
 	"github.com/yunomu/kansousen/lib/lambda/requestcontext"
@@ -39,8 +40,9 @@ func init() {
 }
 
 type server struct {
-	lambdaClient *lambdarpc.Client
-	unmarshaler  *protojson.UnmarshalOptions
+	lambdaClient     *lambdarpc.Client
+	kifuRecentLambda *lambdarpc.Client
+	unmarshaler      *protojson.UnmarshalOptions
 }
 
 func (s *server) kifu(ctx context.Context, reqCtx *requestcontext.Context, r *apihandler.Request) (proto.Message, apihandler.Error) {
@@ -69,6 +71,10 @@ func (s *server) kifu(ctx context.Context, reqCtx *requestcontext.Context, r *ap
 	return res, nil
 }
 
+func (s *server) kifuRecent(ctx context.Context, reqCtx *requestcontext.Context, r *apihandler.Request) (proto.Message, apihandler.Error) {
+	return nil, nil
+}
+
 type apiLogger struct{}
 
 func (*apiLogger) Error(msg string, err error) {
@@ -85,11 +91,23 @@ func main() {
 
 	region := os.Getenv("REGION")
 
+	configURL := os.Getenv("CONFIG_URL")
+	cfg, err := config.Load(configURL)
+	if err != nil {
+		zap.L().Fatal("Load config error", zap.Error(err), zap.String("configURL", configURL))
+	}
+
+	kifuRecentFunc, ok := cfg["RecentKifuFunction"]
+	if !ok {
+		zap.L().Fatal("RecentKifuFunction not found in config", zap.Any("config", cfg))
+	}
+
 	session := session.New()
 	lambdaClient := lambda.New(session, aws.NewConfig().WithRegion(region))
 
 	s := &server{
-		lambdaClient: lambdarpc.NewClient(lambdaClient, kifuFuncArn),
+		lambdaClient:     lambdarpc.NewClient(lambdaClient, kifuFuncArn),
+		kifuRecentLambda: lambdarpc.NewClient(lambdaClient, kifuRecentFunc),
 		unmarshaler: &protojson.UnmarshalOptions{
 			DiscardUnknown: true,
 		},
