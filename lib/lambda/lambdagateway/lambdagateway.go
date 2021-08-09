@@ -109,6 +109,7 @@ type Gateway struct {
 	lambdaClient         *lambda.Lambda
 	functions            map[string]map[string]function
 	functionErrorHandler func(*LambdaError) error
+	contextModifiers     []func(*lambdacontext.ClientContext, *Request) error
 	logger               Logger
 }
 
@@ -132,6 +133,85 @@ func SetFunctionErrorHandler(h func(*LambdaError) error) GatewayOption {
 			h = func(err *LambdaError) error { return err }
 		}
 		s.functionErrorHandler = h
+	}
+}
+
+func WidthAPIRequestID() GatewayOption {
+	return func(s *Gateway) {
+		s.contextModifiers = append(s.contextModifiers, func(cc *lambdacontext.ClientContext, req *Request) error {
+			if cc == nil {
+				return nil
+			}
+
+			if cc.Custom == nil {
+				cc.Custom = make(map[string]string)
+			}
+
+			cc.Custom["api-request-id"] = req.RequestContext.RequestID
+
+			return nil
+		})
+	}
+}
+
+type AuthorizerError struct {
+	Message        string                                `json:"message"`
+	RequestContext *events.APIGatewayProxyRequestContext `json:"request_context"`
+}
+
+func (e *AuthorizerError) Error() string {
+	return e.Message
+}
+
+func WidthClaimSubID() GatewayOption {
+	return func(s *Gateway) {
+		s.contextModifiers = append(s.contextModifiers, func(cc *lambdacontext.ClientContext, req *Request) error {
+			if cc == nil {
+				return nil
+			}
+
+			if cc.Custom == nil {
+				cc.Custom = make(map[string]string)
+			}
+
+			reqCtx := &req.RequestContext
+
+			claimsVal, ok := reqCtx.Authorizer["claims"]
+			if !ok {
+				return &AuthorizerError{
+					Message:        "claims not found",
+					RequestContext: reqCtx,
+				}
+			}
+
+			claims, ok := claimsVal.(map[string]interface{})
+			if !ok {
+				return &AuthorizerError{
+					Message:        "unknown claims format",
+					RequestContext: reqCtx,
+				}
+			}
+
+			userIdVal, ok := claims["sub"]
+			if !ok {
+				return &AuthorizerError{
+					Message:        "claims sub not found",
+					RequestContext: reqCtx,
+				}
+			}
+
+			userId, ok := userIdVal.(string)
+			if !ok {
+				return &AuthorizerError{
+					Message:        "unknown claims sub format",
+					RequestContext: reqCtx,
+				}
+			}
+
+			cc.Custom["user-id"] = userId
+
+			return nil
+		})
 	}
 }
 
@@ -211,15 +291,6 @@ func (s *Gateway) errorResponse(e Error) *Response {
 	return s.buildResponse(e.statusCode(), "application/josn", buf.String())
 }
 
-type AuthorizerError struct {
-	Message        string                                `json:"message"`
-	RequestContext *events.APIGatewayProxyRequestContext `json:"request_context"`
-}
-
-func (e *AuthorizerError) Error() string {
-	return e.Message
-}
-
 func getRequestContext(ctx *events.APIGatewayProxyRequestContext) (*requestcontext.Context, error) {
 	requestId := ctx.RequestID
 
@@ -290,16 +361,15 @@ func (s *Gateway) Serve(ctx context.Context, req *Request) (*Response, error) {
 		return s.errorResponse(ClientError(405, "MethodNotAllowed")), nil
 	}
 
-	reqCtx, err := getRequestContext(&req.RequestContext)
-	if err != nil {
-		s.logger.Error("sub is not found in claims", err)
-		return s.errorResponse(ServerError()), nil
-	}
-
 	clientContext := lambdacontext.ClientContext{
 		Custom: map[string]string{},
 	}
-	reqCtx.Encode(clientContext.Custom)
+	for _, f := range s.contextModifiers {
+		if err := f(&clientContext, req); err != nil {
+			s.logger.Error("contextModifier", err)
+			return s.errorResponse(ServerError()), nil
+		}
+	}
 
 	cc, err := encodeClientContext(&clientContext)
 	if err != nil {
@@ -307,12 +377,14 @@ func (s *Gateway) Serve(ctx context.Context, req *Request) (*Response, error) {
 		return s.errorResponse(ServerError()), nil
 	}
 
-	out, err := s.lambdaClient.InvokeWithContext(ctx, &lambda.InvokeInput{
+	in := &lambda.InvokeInput{
 		ClientContext:  aws.String(cc),
 		FunctionName:   aws.String(string(function)),
 		InvocationType: aws.String(lambda.InvocationTypeRequestResponse),
 		Payload:        []byte(req.Body),
-	})
+	}
+
+	out, err := s.lambdaClient.InvokeWithContext(ctx, in)
 	if err != nil {
 		s.logger.Error("lambda invocation", err)
 		return s.errorResponse(ServerError()), nil
