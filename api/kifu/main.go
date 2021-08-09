@@ -5,20 +5,18 @@ import (
 	"os"
 
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	"go.uber.org/zap"
+
+	lambdaclient "github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 
-	apipb "github.com/yunomu/kansousen/proto/kifu"
-
 	"github.com/yunomu/kansousen/lib/config"
-	"github.com/yunomu/kansousen/lib/lambda/apihandler"
+	"github.com/yunomu/kansousen/lib/lambda/lambdagateway"
 	"github.com/yunomu/kansousen/lib/lambda/lambdarpc"
-	"github.com/yunomu/kansousen/lib/lambda/requestcontext"
 )
 
 func init() {
@@ -43,36 +41,6 @@ type server struct {
 	lambdaClient     *lambdarpc.Client
 	kifuRecentLambda *lambdarpc.Client
 	unmarshaler      *protojson.UnmarshalOptions
-}
-
-func (s *server) kifu(ctx context.Context, reqCtx *requestcontext.Context, r *apihandler.Request) (proto.Message, apihandler.Error) {
-	req := &apipb.KifuRequest{}
-	if err := s.unmarshaler.Unmarshal([]byte(r.Body), req); err != nil {
-		return nil, apihandler.ClientError(400, err.Error())
-	}
-
-	res := &apipb.KifuResponse{}
-	if err := s.lambdaClient.Invoke(ctx, reqCtx, req, res); err != nil {
-		switch err.(type) {
-		case *lambdarpc.LambdaError:
-			e := err.(*lambdarpc.LambdaError)
-			// TODO: errorType client error
-			zap.L().Error("LambdaInvoke",
-				zap.String("errorType", e.ErrorType),
-				zap.String("errorMessage", e.ErrorMessage),
-			)
-			return nil, apihandler.ServerError()
-		default:
-			zap.L().Error("LambdaInvoke", zap.Error(err))
-			return nil, apihandler.ServerError()
-		}
-	}
-
-	return res, nil
-}
-
-func (s *server) kifuRecent(ctx context.Context, reqCtx *requestcontext.Context, r *apihandler.Request) (proto.Message, apihandler.Error) {
-	return nil, nil
 }
 
 type apiLogger struct{}
@@ -105,18 +73,13 @@ func main() {
 	session := session.New()
 	lambdaClient := lambda.New(session, aws.NewConfig().WithRegion(region))
 
-	s := &server{
-		lambdaClient:     lambdarpc.NewClient(lambdaClient, kifuFuncArn),
-		kifuRecentLambda: lambdarpc.NewClient(lambdaClient, kifuRecentFunc),
-		unmarshaler: &protojson.UnmarshalOptions{
-			DiscardUnknown: true,
-		},
-	}
-
-	h := apihandler.NewHandler(
-		apihandler.AddHandler("/v1/kifu", "POST", s.kifu),
-		apihandler.SetLogger(&apiLogger{}),
+	gw := lambdagateway.NewLambdaGateway(lambdaClient,
+		lambdagateway.WithAPIRequestID(),
+		lambdagateway.WithClaimSubID(),
+		lambdagateway.AddFunction("/v1/kifu", "POST", kifuFuncArn),
+		lambdagateway.AddFunction("/v1/kifu/recent", "POST", kifuRecentFunc),
+		lambdagateway.SetLogger(&apiLogger{}),
 	)
 
-	h.Start(ctx)
+	lambdaclient.StartWithContext(ctx, gw.Serve)
 }

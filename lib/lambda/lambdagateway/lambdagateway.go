@@ -1,4 +1,4 @@
-package lambdagateaway
+package lambdagateway
 
 import (
 	"bytes"
@@ -127,7 +127,7 @@ func AddFunction(path, method, functionArn string) GatewayOption {
 	}
 }
 
-func SetFunctionErrorHandler(h func(*LambdaError) error) GatewayOption {
+func AddFunctionErrorHandler(h func(*LambdaError) error) GatewayOption {
 	return func(s *Gateway) {
 		if h == nil {
 			h = func(err *LambdaError) error { return err }
@@ -136,7 +136,7 @@ func SetFunctionErrorHandler(h func(*LambdaError) error) GatewayOption {
 	}
 }
 
-func WidthAPIRequestID() GatewayOption {
+func WithAPIRequestID() GatewayOption {
 	return func(s *Gateway) {
 		s.contextModifiers = append(s.contextModifiers, func(cc *lambdacontext.ClientContext, req *Request) error {
 			if cc == nil {
@@ -163,7 +163,7 @@ func (e *AuthorizerError) Error() string {
 	return e.Message
 }
 
-func WidthClaimSubID() GatewayOption {
+func WithClaimSubID() GatewayOption {
 	return func(s *Gateway) {
 		s.contextModifiers = append(s.contextModifiers, func(cc *lambdacontext.ClientContext, req *Request) error {
 			if cc == nil {
