@@ -53,7 +53,7 @@ func (h *handler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	if !ok {
 		return nil, errors.New("no lambdacontext")
 	}
-	reqCtx := requestcontext.Decode(lc.ClientContext.Custom)
+	reqCtx := requestcontext.FromCustomMap(lc.ClientContext.Custom)
 
 	in := &kifupb.KifuRequest{}
 	if err := h.unmarshaler.Unmarshal(payload, in); err != nil {

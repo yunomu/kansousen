@@ -76,7 +76,7 @@ func (h *handler) Invoke(ctx context.Context, in *kifupb.RecentKifuRequest) (*ki
 	if !ok {
 		return nil, errors.New("no lambdacontext")
 	}
-	reqCtx := requestcontext.Decode(lc.ClientContext.Custom)
+	reqCtx := requestcontext.FromCustomMap(lc.ClientContext.Custom)
 
 	kifus, err := h.service.RecentKifu(ctx, reqCtx.UserId, in.Limit)
 	if err != nil {

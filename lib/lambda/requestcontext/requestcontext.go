@@ -6,20 +6,11 @@ type Context struct {
 }
 
 const (
-	requestIdField = "request-context-request-id"
-	userIdField    = "request-context-user-id"
+	requestIdField = "api-request-id"
+	userIdField    = "user-id"
 )
 
-func (c *Context) Encode(out map[string]string) {
-	if c == nil || out == nil {
-		return
-	}
-
-	out[requestIdField] = c.RequestId
-	out[userIdField] = c.UserId
-}
-
-func Decode(in map[string]string) *Context {
+func FromCustomMap(in map[string]string) *Context {
 	if in == nil {
 		return nil
 	}
