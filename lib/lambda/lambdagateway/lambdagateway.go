@@ -127,7 +127,7 @@ func AddFunction(path, method, functionArn string) GatewayOption {
 	}
 }
 
-func AddFunctionErrorHandler(h func(*LambdaError) error) GatewayOption {
+func SetFunctionErrorHandler(h func(*LambdaError) error) GatewayOption {
 	return func(s *Gateway) {
 		if h == nil {
 			h = func(err *LambdaError) error { return err }

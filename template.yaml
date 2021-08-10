@@ -223,6 +223,12 @@ Resources:
             Path: /v1/kifu
             Method: POST
             RestApiId: !Ref KifuApi
+        KifuRecentApiEvent:
+          Type: Api
+          Properties:
+            Path: /v1/recent-kifu
+            Method: POST
+            RestApiId: !Ref KifuApi
   HealthApiFunction:
     Type: AWS::Serverless::Function
     Properties:
