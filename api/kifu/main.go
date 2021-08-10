@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"go.uber.org/zap"
 
 	lambdaclient "github.com/aws/aws-lambda-go/lambda"
@@ -16,7 +14,6 @@ import (
 
 	"github.com/yunomu/kansousen/lib/config"
 	"github.com/yunomu/kansousen/lib/lambda/lambdagateway"
-	"github.com/yunomu/kansousen/lib/lambda/lambdarpc"
 )
 
 func init() {
@@ -35,12 +32,6 @@ func init() {
 		logger = l
 	}
 	zap.ReplaceGlobals(logger)
-}
-
-type server struct {
-	lambdaClient     *lambdarpc.Client
-	kifuRecentLambda *lambdarpc.Client
-	unmarshaler      *protojson.UnmarshalOptions
 }
 
 type apiLogger struct{}
