@@ -6,8 +6,8 @@ type Context struct {
 }
 
 const (
-	requestIdField = "api-request-id"
-	userIdField    = "user-id"
+	RequestIdField = "api-request-id"
+	UserIdField    = "user-id"
 )
 
 func FromCustomMap(in map[string]string) *Context {
@@ -16,7 +16,7 @@ func FromCustomMap(in map[string]string) *Context {
 	}
 
 	return &Context{
-		RequestId: in[requestIdField],
-		UserId:    in[userIdField],
+		RequestId: in[RequestIdField],
+		UserId:    in[UserIdField],
 	}
 }

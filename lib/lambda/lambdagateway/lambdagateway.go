@@ -147,7 +147,7 @@ func WithAPIRequestID() GatewayOption {
 				cc.Custom = make(map[string]string)
 			}
 
-			cc.Custom["api-request-id"] = req.RequestContext.RequestID
+			cc.Custom[requestcontext.RequestIdField] = req.RequestContext.RequestID
 
 			return nil
 		})
@@ -208,7 +208,7 @@ func WithClaimSubID() GatewayOption {
 				}
 			}
 
-			cc.Custom["user-id"] = userId
+			cc.Custom[requestcontext.UserIdField] = userId
 
 			return nil
 		})
