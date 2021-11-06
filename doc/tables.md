@@ -18,3 +18,16 @@
 |seq|N| | |x|| | | |p|
 
 ### Values
+
+* `kifuId`: Kifu ID
+* `var`: variable descriptor. values: `KIFU`,`STEP:{seq}`
+* `userId`: User ID
+* `createdTs`: Created timestamp
+* `startTs`: Game start timestamp
+* `sfen`: SFEN formated Kifu
+* `pos`: Signature of position(SFEN pos format)
+* `kifu`: protobuf.Kifu
+* `version`: Timestamp for optimistic locking
+* `stempNum`: Number of moves
+* `step`: protobuf.Step
+* `seq`: Sequence number of moves
