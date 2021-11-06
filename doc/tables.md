@@ -33,4 +33,4 @@
 * `version`: Timestamp for optimistic locking
 * `stempNum`: Number of moves
 * `step`: protobuf.Step
-* `seq`: Sequence number of moves
+* `seq`: Sequence number of moves. seq > 0
