@@ -2,6 +2,9 @@
 ## Kifu table
 ### Definition
 
+* `p`: projection
+* `x`: check
+
 |attributeName|type|attr|var=KIFU|var=STEP||GSI:Created|GSI:Start|GSI:Sfen|GSI:Position|
 |-|-|-|-|-|-|-|-|-|-|
 |kifuId|S|PK|x|x||*|*|*|*|
