@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -17,8 +17,17 @@ jobs:
       with:
         go-version: 1.17
 
-    - name: Build
-      run: go build -v ./...
-
     - name: Test
       run: go test -v ./...
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: $AWS_ROLE_ARN
+        aws-region: $AWS_REGION
+      env:
+        AWS_ROLE_ARN: ${{ secrets.ROLE_ARN }}
+        AWS_REGION: ${{ secrets.REGION }}
+
+    - name: Execute pipeline
+      run: aws sts get-caller-identity
