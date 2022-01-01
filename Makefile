@@ -29,13 +29,3 @@ proto/%: proto/%.proto
 
 $(PROTO_ELM_TARGETS): proto/kifu.proto
 	protoc --elm_out=$(ELM_DIR) $< 2> /dev/null
-
-elm:
-	elm make $(ELM_DIR)/Main.elm --output=static/main.js
-
-elm-release:
-	rm -rf $(PUBLISH_DIR)
-	cp -r static $(PUBLISH_DIR)
-	elm make $(ELM_DIR)/Main.elm --output=static/main.opt.js --optimize
-	uglifyjs --compress --mangle -- static/main.opt.js > public/main.js
-	rm -f static/main.opt.js $(PUBLISH_DIR)/config.json

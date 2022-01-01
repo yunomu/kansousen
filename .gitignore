@@ -1,11 +1,5 @@
-# Serverless directories
-.serverless
-
 # golang output binary directory
 bin
-
-# golang vendor (dependencies) directory
-vendor
 
 # Binaries for programs and plugins
 *.exe
@@ -20,13 +14,5 @@ vendor
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-/elm-stuff
-
 /.aws-sam
 /samconfig.toml
-
-/public
-
-/static/main.js
-/static/main.opt.js
-/static/config.json
