@@ -29,4 +29,6 @@ jobs:
         aws-region: ${{ secrets.REGION }}
 
     - name: Execute pipeline
-      run: aws sts get-caller-identity
+      env:
+        PIPELINE: ${{ secrets.PIPELINE }}
+      run: aws codepipeline start-pipeline-execution --name $PIPELINE
