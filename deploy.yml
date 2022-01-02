@@ -1,5 +1,13 @@
 version: 0.2
 
+env:
+  parameter-store:
+    API_DOMAIN_NAME: /kansousen/prod/apiDomainName
+    SITE_DOMAIN_NAME: /kansousen/prod/siteDomainName
+    AUTH_DOMAIN_NAME: /kansousen/prod/authDomainName
+    CERTIFICATE: /kansousen/prod/certificate
+    COGNITO_CERTIFICATE: /kansousen/prod/cognitoCertificate
+
 phases:
   pre_build:
     commands:
