@@ -15,5 +15,4 @@ phases:
 
   build:
     commands:
-      - sam build
       - sam deploy --stack-name $STACK_NAME --region $REGION --parameter-overrides ApiDomainName=$API_DOMAIN_NAME SiteDomainName=$SITE_DOMAIN_NAME AuthDomainName=$AUTH_DOMAIN_NAME Certificate=$CERTIFICATE CognitoCertificate=$COGNITO_CERTIFICATE --resolve-s3 --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset --no-progressbar --debug

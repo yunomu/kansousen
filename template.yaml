@@ -188,6 +188,13 @@ Resources:
       CustomDomainConfig:
         CertificateArn: !Ref CognitoCertificate
 
+  CognitoUserPoolClientId:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/kansousen/${Stage}/userPoolClientId"
+      Value: !Ref CognitoUserPoolClient
+
   KifuApiV2:
     Type: AWS::Serverless::HttpApi
     Properties:

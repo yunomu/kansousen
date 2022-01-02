@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - sam --version
+
+  build:
+    commands:
+      - sam build
+
+artifacts:
+  files:
+    - '**/*'
