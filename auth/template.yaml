@@ -14,8 +14,6 @@ Parameters:
     Type: String
   AuthDomainName:
     Type: String
-  Certificate:
-    Type: String
   CognitoCertificate:
     Type: String
 
