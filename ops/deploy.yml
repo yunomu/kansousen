@@ -16,6 +16,6 @@ phases:
 
   build:
     commands:
-      - aws cloudformation deploy --stack-name $STACK_NAME-auth --template-file auth/template.yaml --no-fail-no-empty-changeset
+      - aws cloudformation deploy --stack-name $STACK_NAME-auth --template-file auth/template.yaml --no-fail-on-empty-changeset
       - aws cloudformation describe-stacks --stack-name $STACK_NAME-auth | jq '.Stacks[].Outputs[]' > output.json
       - sam deploy --stack-name $STACK_NAME --region $REGION --parameter-overrides ApiDomainName=$API_DOMAIN_NAME SiteDomainName=$SITE_DOMAIN_NAME AuthDomainName=$AUTH_DOMAIN_NAME Certificate=$CERTIFICATE CognitoCertificate=$COGNITO_CERTIFICATE CognitoUserPool=`jq -r 'select(.OutputKey=="UserPoolID").OutputValue'` CognitoUserPool=`jq -r 'select(.OutputKey=="UserPoolClientID").OutputValue'` --resolve-s3 --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset --no-progressbar --debug
