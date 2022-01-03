@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   kansousen auth
 
-Globals:
-  Function:
-    Timeout: 5
-
 Parameters:
   Stage:
     Type: String
