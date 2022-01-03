@@ -19,7 +19,9 @@ Parameters:
     Type: String
   Certificate:
     Type: String
-  CognitoCertificate:
+  CognitoUserPool:
+    Type: String
+  CognitoUserPoolClient:
     Type: String
 
 Resources:
@@ -121,80 +123,6 @@ Resources:
           REGION: !Ref AWS::Region
           TABLE_NAME: !Ref KansousenTable
 
-  CognitoUserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      UsernameAttributes:
-        - email
-      UsernameConfiguration:
-        CaseSensitive: False
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 8
-          RequireLowercase: False
-          RequireNumbers: False
-          RequireSymbols: False
-          RequireUppercase: False
-          TemporaryPasswordValidityDays: 7
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: False
-      AccountRecoverySetting:
-        RecoveryMechanisms:
-          - Priority: 1
-            Name: verified_email
-      AutoVerifiedAttributes:
-        - email
-      EmailConfiguration:
-        EmailSendingAccount: COGNITO_DEFAULT
-
-  CognitoUserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      UserPoolId: !Ref CognitoUserPool
-      SupportedIdentityProviders:
-        - COGNITO
-      GenerateSecret: false
-      CallbackURLs:
-        - !Sub "https://${SiteDomainName}/callback"
-        - http://localhost:8080/callback
-      LogoutURLs:
-        - !Sub "https://${SiteDomainName}/"
-        - http://localhost:8080/
-      AllowedOAuthFlowsUserPoolClient: true
-      AllowedOAuthFlows:
-        - code
-      AllowedOAuthScopes:
-        - phone
-        - email
-        - openid
-        - profile
-        - aws.cognito.signin.user.admin
-      ExplicitAuthFlows:
-        - ALLOW_USER_PASSWORD_AUTH
-        - ALLOW_REFRESH_TOKEN_AUTH
-      TokenValidityUnits:
-        IdToken: "hours"
-        AccessToken: "hours"
-        RefreshToken: "days"
-      IdTokenValidity: 1
-      AccessTokenValidity: 1
-      RefreshTokenValidity: 30
-
-  CognitoUserPoolDomain:
-    Type: AWS::Cognito::UserPoolDomain
-    Properties:
-      UserPoolId: !Ref CognitoUserPool
-      Domain: !Ref AuthDomainName
-      CustomDomainConfig:
-        CertificateArn: !Ref CognitoCertificate
-
-  CognitoUserPoolClientId:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/kansousen/${Stage}/userPoolClientId"
-      Value: !Ref CognitoUserPoolClient
-
   KifuApiV2:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -275,15 +203,3 @@ Outputs:
   KifuFunction:
     Description: "KifuFunction Arn"
     Value: !GetAtt KifuFunction.Arn
-  UserPoolClientID:
-    Description: "User Pool Client ID"
-    Value: !Ref CognitoUserPoolClient
-  ApiID:
-    Description: "API ID"
-    Value: !Ref KifuApiV2
-  Host:
-    Description: "Host URL"
-    Value: !Sub "https://${SiteDomainName}/"
-  IDP:
-    Description: "IDP URL"
-    Value: !Sub "https://${AuthDomainName}/"
