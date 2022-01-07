@@ -8,6 +8,7 @@ phases:
   build:
     commands:
       - sam build
+      - go test ./...
 
 artifacts:
   files:
