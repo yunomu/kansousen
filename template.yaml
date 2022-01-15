@@ -128,9 +128,15 @@ Resources:
     Properties:
       StageName: !Ref Stage
       CorsConfiguration:
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowMethods: "'POST'"
-        AllowOrigins: "'*'"
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - POST
+          - GET
+          - OPTIONS
+        AllowOrigins:
+          - '*'
       Domain:
         DomainName: !Ref ApiDomainName
         CertificateArn: !Ref Certificate
