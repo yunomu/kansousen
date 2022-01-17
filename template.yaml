@@ -10,7 +10,6 @@ Globals:
 Parameters:
   Stage:
     Type: String
-    Default: prod
   ApiDomainName:
     Type: String
   SiteDomainName:
