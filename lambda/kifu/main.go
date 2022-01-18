@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 
-	"github.com/yunomu/kansousen/lib/config"
 	"github.com/yunomu/kansousen/lib/db"
 	"github.com/yunomu/kansousen/lib/lambda/lambdarpc"
 
@@ -20,41 +19,35 @@ import (
 )
 
 func init() {
-	var logger *zap.Logger
-	if os.Getenv("DEV") == "true" {
-		l, err := zap.NewDevelopment()
-		if err != nil {
-			panic(err)
-		}
-		logger = l
-	} else {
-		l, err := zap.NewProduction()
-		if err != nil {
-			panic(err)
-		}
-		logger = l
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
 	}
+
 	zap.ReplaceGlobals(logger)
 }
 
 func main() {
 	ctx := context.Background()
 
-	configURL := os.Getenv("CONFIG_URL")
-	cfg, err := config.Load(configURL)
-	if err != nil {
-		zap.L().Fatal("Load config error", zap.Error(err), zap.String("configURL", configURL))
+	region := os.Getenv("REGION")
+	if region == "" {
+		zap.L().Fatal("Getenv", zap.String("key", "REGION"))
+	}
+	kifuTable := os.Getenv("KIFU_TABLE")
+	if region == "" {
+		zap.L().Fatal("Getenv", zap.String("key", "KIFU_TABLE"))
 	}
 
 	session := session.New()
 
 	zap.L().Info("Start",
-		zap.String("region", cfg["Region"]),
-		zap.String("table_name", cfg["KifuTable"]),
+		zap.String("region", region),
+		zap.String("table_name", kifuTable),
 	)
 
-	dynamodb := dynamodb.New(session, aws.NewConfig().WithRegion(cfg["Region"]))
-	table := db.NewDynamoDB(dynamodb, cfg["KifuTable"])
+	dynamodb := dynamodb.New(session, aws.NewConfig().WithRegion(region))
+	table := db.NewDynamoDB(dynamodb, kifuTable)
 	svc := service.NewService(table)
 
 	h := lambdarpc.NewHandler(svc)

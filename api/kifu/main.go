@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 
-	"github.com/yunomu/kansousen/lib/config"
 	"github.com/yunomu/kansousen/lib/lambda/lambdagateway"
 	"github.com/yunomu/kansousen/lib/lambda/lambdarpc"
 )
@@ -44,23 +43,26 @@ func (*apiLogger) Error(msg string, err error) {
 func main() {
 	ctx := context.Background()
 
-	configURL := os.Getenv("CONFIG_URL")
-	cfg, err := config.Load(configURL)
-	if err != nil {
-		zap.L().Fatal("Load config error", zap.Error(err), zap.String("configURL", configURL))
+	region := os.Getenv("REGION")
+	if region == "" {
+		zap.L().Fatal("Getenv", zap.String("key", "REGION"))
+	}
+	kifuFuncArn := os.Getenv("KIFU_FUNCTION")
+	if kifuFuncArn == "" {
+		zap.L().Fatal("Getenv", zap.String("key", "KIFU_FUNCTION"))
 	}
 
 	session := session.New()
-	lambdaClient := lambda.New(session, aws.NewConfig().WithRegion(cfg["Region"]))
+	lambdaClient := lambda.New(session, aws.NewConfig().WithRegion(region))
 
 	gw := lambdagateway.NewLambdaGateway(lambdaClient,
 		lambdagateway.WithAPIRequestID(lambdarpc.ApiRequestIdField),
 		lambdagateway.WithClaimSubID(lambdarpc.UserIdField),
-		lambdagateway.AddFunction("/v1/post-kifu", "POST", cfg["KifuFunction"], "PostKifu"),
-		lambdagateway.AddFunction("/v1/get-kifu", "POST", cfg["KifuFunction"], "GetKifu"),
-		lambdagateway.AddFunction("/v1/delete-kifu", "POST", cfg["KifuFunction"], "DeleteKifu"),
-		lambdagateway.AddFunction("/v1/recent-kifu", "POST", cfg["KifuFunction"], "RecentKifu"),
-		lambdagateway.AddFunction("/v1/same-positions", "POST", cfg["KifuFunction"], "GetSamePositions"),
+		lambdagateway.AddFunction("/v1/post-kifu", "POST", kifuFuncArn, "PostKifu"),
+		lambdagateway.AddFunction("/v1/get-kifu", "POST", kifuFuncArn, "GetKifu"),
+		lambdagateway.AddFunction("/v1/delete-kifu", "POST", kifuFuncArn, "DeleteKifu"),
+		lambdagateway.AddFunction("/v1/recent-kifu", "POST", kifuFuncArn, "RecentKifu"),
+		lambdagateway.AddFunction("/v1/same-positions", "POST", kifuFuncArn, "GetSamePositions"),
 		lambdagateway.SetLogger(&apiLogger{}),
 		lambdagateway.SetFunctionErrorHandler(func(e *lambdagateway.LambdaError) error {
 			switch e.ErrorType {

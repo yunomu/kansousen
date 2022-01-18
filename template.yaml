@@ -12,10 +12,6 @@ Parameters:
     Type: String
   ApiDomainName:
     Type: String
-  SiteDomainName:
-    Type: String
-  AuthDomainName:
-    Type: String
   Certificate:
     Type: String
   CognitoUserPool:
@@ -120,7 +116,7 @@ Resources:
       Environment:
         Variables:
           REGION: !Ref AWS::Region
-          TABLE_NAME: !Ref KansousenTable
+          KIFU_TABLE: !Ref KansousenTable
 
   KifuApiV2:
     Type: AWS::Serverless::HttpApi
@@ -165,7 +161,8 @@ Resources:
               Resource: !GetAtt KifuFunction.Arn
       Environment:
         Variables:
-          CONFIG_URL: !Sub "https://${SiteDomainName}/config.json"
+          REGION: !Ref AWS::Region
+          KIFU_FUNCTION: !GetAtt KifuFunction.Arn
       Events:
         KifuApiEvent:
           Type: HttpApi
@@ -205,6 +202,6 @@ Outputs:
   KifuTable:
     Description: "Table name for Kifu"
     Value: !Ref KansousenTable
-  KifuFunction:
-    Description: "KifuFunction Arn"
-    Value: !GetAtt KifuFunction.Arn
+  ApiRegionalDomainName:
+    Description: "Set CNAME record"
+    Value: !GetAtt KifuApiV2.DomainName.RegionalDomainName
