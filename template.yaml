@@ -142,7 +142,8 @@ Resources:
           OAuth2Authorizer:
             IdentitySource: '$request.header.Authorization'
             JwtConfiguration:
-              audience: !Ref CognitoUserPoolClient
+              audience:
+                - !Ref CognitoUserPoolClient
               issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}"
         DefaultAuthorizer: OAuth2Authorizer
 
