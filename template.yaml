@@ -164,6 +164,7 @@ Resources:
         Variables:
           REGION: !Ref AWS::Region
           KIFU_FUNCTION: !GetAtt KifuFunction.Arn
+          BASE_PATH: !Sub "/${Stage}"
       Events:
         KifuApiEvent:
           Type: HttpApi
@@ -183,6 +184,7 @@ Resources:
         Variables:
           REGION: !Ref AWS::Region
           TABLE_NAME: !Ref KansousenTable
+          BASE_PATH: !Sub "/${Stage}"
       Events:
         HealthApiEvent:
           Type: HttpApi

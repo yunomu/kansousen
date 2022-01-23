@@ -16,28 +16,20 @@ import (
 	"github.com/yunomu/kansousen/lib/lambda/lambdarpc"
 )
 
+var logger *zap.Logger
+
 func init() {
-	var logger *zap.Logger
-	if os.Getenv("DEV") == "true" {
-		l, err := zap.NewDevelopment()
-		if err != nil {
-			panic(err)
-		}
-		logger = l
-	} else {
-		l, err := zap.NewProduction()
-		if err != nil {
-			panic(err)
-		}
-		logger = l
+	l, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
 	}
-	zap.ReplaceGlobals(logger)
+	logger = l
 }
 
 type apiLogger struct{}
 
 func (*apiLogger) Error(msg string, err error) {
-	zap.L().Error(msg, zap.Error(err))
+	logger.Error(msg, zap.Error(err))
 }
 
 func main() {
@@ -51,6 +43,7 @@ func main() {
 	if kifuFuncArn == "" {
 		zap.L().Fatal("Getenv", zap.String("key", "KIFU_FUNCTION"))
 	}
+	basePath := os.Getenv("BASE_PATH")
 
 	session := session.New()
 	lambdaClient := lambda.New(session, aws.NewConfig().WithRegion(region))
@@ -63,6 +56,7 @@ func main() {
 		lambdagateway.AddFunction("/v1/delete-kifu", "POST", kifuFuncArn, "DeleteKifu"),
 		lambdagateway.AddFunction("/v1/recent-kifu", "POST", kifuFuncArn, "RecentKifu"),
 		lambdagateway.AddFunction("/v1/same-positions", "POST", kifuFuncArn, "GetSamePositions"),
+		lambdagateway.SetBasePath(basePath),
 		lambdagateway.SetLogger(&apiLogger{}),
 		lambdagateway.SetFunctionErrorHandler(func(e *lambdagateway.LambdaError) error {
 			switch e.ErrorType {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -15,32 +16,25 @@ import (
 	runtime "github.com/aws/aws-lambda-go/lambda"
 )
 
+var logger *zap.Logger
+
 func init() {
-	var logger *zap.Logger
-	if os.Getenv("DEV") == "true" {
-		l, err := zap.NewDevelopment()
-		if err != nil {
-			panic(err)
-		}
-		logger = l
-	} else {
-		l, err := zap.NewProduction()
-		if err != nil {
-			panic(err)
-		}
-		logger = l
+	l, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
 	}
-	zap.ReplaceGlobals(logger)
+	logger = l
 }
 
 type server struct {
 	region    string
 	tableName string
 	db        *dynamodb.DynamoDB
+	basePath  string
 }
 
-type request events.APIGatewayProxyRequest
-type response events.APIGatewayProxyResponse
+type request events.APIGatewayV2HTTPRequest
+type response events.APIGatewayV2HTTPResponse
 
 func retval(body map[string]interface{}) (*response, error) {
 	bs, err := json.Marshal(body)
@@ -59,11 +53,7 @@ func retval(body map[string]interface{}) (*response, error) {
 }
 
 func (s *server) healthz(ctx context.Context, req *request) (*response, error) {
-
 	ret := map[string]interface{}{}
-
-	//session := session.New()
-	//db := dynamodb.New(session, aws.NewConfig().WithRegion(s.region))
 
 	out, err := s.db.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(s.tableName),
@@ -83,18 +73,26 @@ func (s *server) handler(ctx context.Context, req *request) (*response, error) {
 		"Access-Control-Allow-Origin": "*",
 	}
 
-	switch req.HTTPMethod {
+	switch req.RequestContext.HTTP.Method {
 	case "GET":
-		switch req.Path {
+		switch strings.TrimPrefix(req.RawPath, s.basePath) {
 		case "/v1/ok":
 			return s.healthz(ctx, req)
 		default:
+			logger.Error("NotFound",
+				zap.String("path", strings.TrimPrefix(s.basePath, req.RawPath)),
+				zap.Any("req", req),
+			)
 			return &response{
 				StatusCode: 404,
 				Headers:    header,
 			}, nil
 		}
 	default:
+		logger.Error("MethodNotAllowed",
+			zap.String("path", strings.TrimPrefix(req.RawPath, s.basePath)),
+			zap.Any("req", req),
+		)
 		return &response{
 			StatusCode: 405,
 			Headers:    header,
@@ -107,6 +105,7 @@ func main() {
 
 	region := os.Getenv("REGION")
 	tableName := os.Getenv("TABLE_NAME")
+	basePath := os.Getenv("BASE_PATH")
 
 	session := session.New()
 	db := dynamodb.New(session, aws.NewConfig().WithRegion(region))
@@ -115,6 +114,7 @@ func main() {
 		region:    region,
 		tableName: tableName,
 		db:        db,
+		basePath:  basePath,
 	}
 
 	runtime.StartWithContext(ctx, s.handler)

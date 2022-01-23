@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 )
 
-type Request events.APIGatewayProxyRequest
-type Response events.APIGatewayProxyResponse
+type Request events.APIGatewayV2HTTPRequest
+type Response events.APIGatewayV2HTTPResponse
 
 type LambdaError struct {
 	ErrorType    string `json:"errorType"`
@@ -104,6 +104,7 @@ type function struct {
 
 type Gateway struct {
 	lambdaClient         *lambda.Lambda
+	basePath             string
 	functions            map[string]map[string]function
 	functionErrorHandler func(*LambdaError) error
 	contextModifiers     []func(*lambdacontext.ClientContext, *Request) error
@@ -154,9 +155,15 @@ func WithAPIRequestID(apiRequestIdField string) GatewayOption {
 	}
 }
 
+func SetBasePath(basePath string) GatewayOption {
+	return func(s *Gateway) {
+		s.basePath = basePath
+	}
+}
+
 type AuthorizerError struct {
-	Message        string                                `json:"message"`
-	RequestContext *events.APIGatewayProxyRequestContext `json:"request_context"`
+	Message        string                                 `json:"message"`
+	RequestContext *events.APIGatewayV2HTTPRequestContext `json:"request_context"`
 }
 
 func (e *AuthorizerError) Error() string {
@@ -175,32 +182,9 @@ func WithClaimSubID(field string) GatewayOption {
 			}
 
 			reqCtx := &req.RequestContext
+			jwt := reqCtx.Authorizer.JWT
 
-			claimsVal, ok := reqCtx.Authorizer["claims"]
-			if !ok {
-				return &AuthorizerError{
-					Message:        "claims not found",
-					RequestContext: reqCtx,
-				}
-			}
-
-			claims, ok := claimsVal.(map[string]interface{})
-			if !ok {
-				return &AuthorizerError{
-					Message:        "unknown claims format",
-					RequestContext: reqCtx,
-				}
-			}
-
-			subIdVal, ok := claims["sub"]
-			if !ok {
-				return &AuthorizerError{
-					Message:        "claims sub not found",
-					RequestContext: reqCtx,
-				}
-			}
-
-			subId, ok := subIdVal.(string)
+			subId, ok := jwt.Claims["sub"]
 			if !ok {
 				return &AuthorizerError{
 					Message:        "unknown claims sub format",
@@ -313,12 +297,14 @@ func encodeClientContext(cc *lambdacontext.ClientContext) (string, error) {
 }
 
 func (s *Gateway) Serve(ctx context.Context, req *Request) (*Response, error) {
-	path, ok := s.functions[req.Path]
+	reqPath := strings.TrimPrefix(req.RawPath, s.basePath)
+
+	path, ok := s.functions[reqPath]
 	if !ok {
 		return s.errorResponse(ClientError(404, "NotFound")), nil
 	}
 
-	function, ok := path[req.HTTPMethod]
+	function, ok := path[req.RequestContext.HTTP.Method]
 	if !ok {
 		return s.errorResponse(ClientError(405, "MethodNotAllowed")), nil
 	}
