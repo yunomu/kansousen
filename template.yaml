@@ -134,6 +134,7 @@ Resources:
           - '*'
       Domain:
         DomainName: !Ref ApiDomainName
+        BasePath: /v1
         CertificateArn: !Ref Certificate
         SecurityPolicy: TLS_1_2
         EndpointConfiguration: REGIONAL
@@ -169,8 +170,6 @@ Resources:
         KifuApiEvent:
           Type: HttpApi
           Properties:
-            Path: /v1/{proxy+}
-            Method: POST
             ApiId: !Ref KifuApiV2
 
   HealthApiFunction:
@@ -189,7 +188,7 @@ Resources:
         HealthApiEvent:
           Type: HttpApi
           Properties:
-            Path: /v1/ok
+            Path: /ok
             Method: GET
             ApiId: !Ref KifuApiV2
             Auth:

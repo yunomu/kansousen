@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -73,28 +72,13 @@ func (s *server) handler(ctx context.Context, req *request) (*response, error) {
 		"Access-Control-Allow-Origin": "*",
 	}
 
-	switch req.RequestContext.HTTP.Method {
-	case "GET":
-		switch strings.TrimPrefix(req.RawPath, s.basePath) {
-		case "/v1/ok":
-			return s.healthz(ctx, req)
-		default:
-			logger.Error("NotFound",
-				zap.String("path", strings.TrimPrefix(s.basePath, req.RawPath)),
-				zap.Any("req", req),
-			)
-			return &response{
-				StatusCode: 404,
-				Headers:    header,
-			}, nil
-		}
+	switch req.RouteKey {
+	case "GET /ok":
+		return s.healthz(ctx, req)
 	default:
-		logger.Error("MethodNotAllowed",
-			zap.String("path", strings.TrimPrefix(req.RawPath, s.basePath)),
-			zap.Any("req", req),
-		)
+		logger.Error("NotFound", zap.Any("req", req))
 		return &response{
-			StatusCode: 405,
+			StatusCode: 404,
 			Headers:    header,
 		}, nil
 	}
