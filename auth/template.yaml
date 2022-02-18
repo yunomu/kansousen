@@ -80,6 +80,13 @@ Resources:
       CustomDomainConfig:
         CertificateArn: !Ref CognitoCertificate
 
+  CognitoUserPoolId:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/kansousen/${Stage}/userPoolId"
+      Value: !Ref CognitoUserPool
+
   CognitoUserPoolClientId:
     Type: AWS::SSM::Parameter
     Properties:

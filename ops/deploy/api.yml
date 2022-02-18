@@ -1,0 +1,18 @@
+version: 0.2
+
+env:
+  parameter-store:
+    API_DOMAIN_NAME: /kansousen/$STAGE/apiDomainName
+    CERTIFICATE: /kansousen/$STAGE/certificate
+    COGNITO_USER_POOL: /kansousen/$STAGE/cognitoUsePoolId
+    COGNITO_USER_POOL_CLIENT: /kansousen/$STAGE/cognitoUsePoolClientId
+
+phases:
+  pre_build:
+    commands:
+      - aws --version
+      - sam --version
+
+  build:
+    commands:
+      - sam deploy --stack-name $STACK_NAME --region $REGION --parameter-overrides Stage=$STAGE ApiDomainName=$API_DOMAIN_NAME Certificate=$CERTIFICATE CognitoUserPool=$COGNITO_USER_POOL CognitoUserPoolClient=$COGNITO_USER_POOL_CLIENT --resolve-s3 --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset --no-progressbar --debug
