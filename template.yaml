@@ -194,6 +194,79 @@ Resources:
             Auth:
               Authorizer: NONE
 
+  KifuApiV3:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      CorsConfiguration:
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - POST
+          - GET
+          - OPTIONS
+        AllowOrigins:
+          - '*'
+      Domain:
+        DomainName: !Ref ApiDomainName
+        BasePath: /v3
+        CertificateArn: !Ref Certificate
+        SecurityPolicy: TLS_1_2
+        EndpointConfiguration: REGIONAL
+      Auth:
+        Authorizers:
+          OAuth2Authorizer:
+            IdentitySource: '$request.header.Authorization'
+            JwtConfiguration:
+              audience:
+                - !Ref CognitoUserPoolClient
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}"
+        DefaultAuthorizer: OAuth2Authorizer
+
+  KifuApiV3Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: api/kifuv3
+      Handler: kifuv3
+      Runtime: go1.x
+      Policies: !Ref KansousenTablePolicy
+      Environment:
+        Variables:
+          REGION: !Ref AWS::Region
+          KIFU_TABLE: !Ref KansousenTable
+      Events:
+        SearchKifu:
+          Type: HttpApi
+          Properties:
+            Method: GET
+            Path: /kifus
+            ApiId: !Ref KifuApiV3
+        PostKifu:
+          Type: HttpApi
+          Properties:
+            Method: POST
+            Path: /kifus
+            ApiId: !Ref KifuApiV3
+        GetKifu:
+          Type: HttpApi
+          Properties:
+            Method: GET
+            Path: /kifus/{kifuId}
+            ApiId: !Ref KifuApiV3
+        PutKifu:
+          Type: HttpApi
+          Properties:
+            Method: PUT
+            Path: /kifus/{kifuId}
+            ApiId: !Ref KifuApiV3
+        DeleteKifu:
+          Type: HttpApi
+          Properties:
+            Method: DELETE
+            Path: /kifus/{kifuId}
+            ApiId: !Ref KifuApiV3
+
 Outputs:
   Region:
     Description: "Region"

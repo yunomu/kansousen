@@ -1,0 +1,1 @@
+[{"ParameterKey":"SiteDomainName","ParameterValue":"kansousen.wagahai.info"},{"ParameterKey":"AuthDomainName","ParameterValue":"kansousenauth.wagahai.info"},{"ParameterKey":"CognitoCertificate","ParameterValue":"arn:aws:acm:us-east-1:970194315034:certificate/22878dcd-b96c-4529-bc08-eddaa1d90324"}]

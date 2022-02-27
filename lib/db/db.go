@@ -64,6 +64,23 @@ type UserKifu struct {
 	KifuId string
 }
 
+type searchOptions struct {
+	count          int
+	stepNum        int
+	pos            string
+	userIds        []string
+	excludeKifuIds []string
+	sfen           string
+}
+
+func defaultSearchOpitons() *searchOptions {
+	return &searchOptions{
+		count: 10,
+	}
+}
+
+type SearchOption func(*searchOptions)
+
 type DB interface {
 	PutKifu(ctx context.Context, kifu *documentpb.Kifu, steps []*documentpb.Step, version int64) (int64, error)
 	GetKifu(ctx context.Context, kifuId string) (*documentpb.Kifu, int64, error)
@@ -73,6 +90,7 @@ type DB interface {
 	GetSamePositions(ctx context.Context, userIds []string, pos string, options ...GetSamePositionsOption) ([]*Position, error)
 	GetRecentKifu(ctx context.Context, userId string, limit int) ([]*documentpb.Kifu, error)
 	DeleteKifu(ctx context.Context, kifuId string, version int64) error
+	Search(ctx context.Context, opts ...SearchOption) error
 }
 
 var (
