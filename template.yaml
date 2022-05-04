@@ -194,6 +194,130 @@ Resources:
             Auth:
               Authorizer: NONE
 
+  KifuTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: kifuId
+          AttributeType: S
+        - AttributeName: var
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: createdTs
+          AttributeType: N
+        - AttributeName: startTs
+          AttributeType: N
+        - AttributeName: sfen
+          AttributeType: S
+        - AttributeName: seq
+          AttributeType: N
+        - AttributeName: pos
+          AttributeType: S
+      KeySchema:
+        - AttributeName: kifuId
+          KeyType: HASH
+        - AttributeName: var
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: Created
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: createdTs
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: Start
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: startTs
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: Sfen
+          KeySchema:
+            - AttributeName: sfen
+              KeyType: HASH
+            - AttributeName: userId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: Position
+          KeySchema:
+            - AttributeName: pos
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: Step
+          KeySchema:
+            - AttributeName: kifuId
+              KeyType: HASH
+            - AttributeName: seq
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  GraphQLApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: kansousen-api
+      AuthenticationType: AMAZON_COGNITO_USER_POOLS
+      UserPoolConfig:
+        UserPoolId: !Ref CognitoUserPool
+        AwsRegion: !Ref AWS::Region
+        DefaultAction: DENY
+
+  GraphQLSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      DefinitionS3Location: schema.graphql
+
+  GraphQLPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:Query
+            Resource:
+              - !GetAtt KifuTable.Arn
+              - !Sub
+                - "${TableARN}/index/*"
+                - { TableARN: !GetAtt KifuTable.Arn }
+
+  GraphQLServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref GraphQLPolicy
+
+  GraphQLDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: DataSourceDynamoDB
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt GraphQLServiceRole.Arn
+      DynamoDBConfig:
+        AwsRegion: !Ref AWS::Region
+        TableName: !Ref KifuTable
+
 Outputs:
   Region:
     Description: "Region"

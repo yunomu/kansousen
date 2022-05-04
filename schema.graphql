@@ -1,0 +1,102 @@
+schema {
+  query: Query
+}
+
+type Query {
+  kifu(id: ID!): Kifu
+}
+
+type Kifu {
+  kifuId: ID!
+  userId: ID
+  timestamp: Float
+  createdTs: Float
+  startTs: Float
+  endTs: Float
+  handicap: Handicap
+  note: String
+  otherFields: [OtherField!]
+  players: [Player!]
+  sfen: String
+  steps: [Step!]
+}
+
+enum Handicap {
+  NONE
+  DROP_L
+  DROP_L_R
+  DROP_B
+  DROP_RL
+  DROP_TWO
+  DROP_THREE
+  DROP_FOUR
+  DROP_FIVE
+  DROP_FIVE_L
+  DROP_SIX
+  DROP_EIGHT
+  DROP_TEN
+  OTHER
+}
+
+type OtherField {
+  name: String!
+  value: String
+}
+
+type Player {
+  name: String!
+  order: Order!
+  note: String
+}
+
+enum Order {
+  BLACK
+  WHITE
+}
+
+type Step {
+  seq: Int!
+  move: String
+  piece: Piece
+  position: String
+  finished: FinishedStatus
+  timeSec: Int
+  thinkSec: Int
+  notes: [StepNote!]
+}
+
+enum Piece {
+  NULL
+  GYOKU
+  HISHA
+  RYU
+  KAKU
+  UMA
+  KIN
+  GIN
+  NARI_GIN
+  KEI
+  NARI_KEI
+  KYOU
+  NARI_KYOU
+  FU
+  TO
+}
+
+enum FinishedStatus {
+  NOT_FINISHED
+  SUSPEND
+  SURRENDER
+  DRAW
+  REPETITION_DRAW
+  CHECKMATE
+  OVER_TIME_LIMIT
+  FOUL_LOSS
+  FOUL_WIN
+  NYUGYOKU_WIN
+}
+
+type StepNote {
+  id: Int!
+  text: String
+}
