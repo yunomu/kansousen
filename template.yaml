@@ -274,7 +274,7 @@ Resources:
     Type: AWS::AppSync::GraphQLSchema
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
-      DefinitionS3Location: schema.graphql
+      DefinitionS3Location: graphql/schema.graphql
 
   GraphQLPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -317,6 +317,15 @@ Resources:
       DynamoDBConfig:
         AwsRegion: !Ref AWS::Region
         TableName: !Ref KifuTable
+
+  KifuResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      DataSourceName: !GetAtt GraphQLDataSource.Name
+      TypeName: Query
+      FieldName: kifu
+      RequestMappingTemplateS3Location: graphql/request.json
 
 Outputs:
   Region:
