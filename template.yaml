@@ -276,7 +276,7 @@ Resources:
       ApiId: !GetAtt GraphQLApi.ApiId
       DefinitionS3Location: graphql/schema.graphql
 
-  GraphQLPolicy:
+  KifuTablePolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       PolicyDocument:
@@ -285,12 +285,43 @@ Resources:
           - Effect: Allow
             Action:
               - dynamodb:GetItem
+              - dynamodb:BatchGetItem
               - dynamodb:Query
+              - dynamodb:DescribeTable
+              - dynamodb:PutItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:DeleteItem
             Resource:
               - !GetAtt KifuTable.Arn
               - !Sub
                 - "${TableARN}/index/*"
                 - { TableARN: !GetAtt KifuTable.Arn }
+
+  KifuDataSourceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: appsync/kifu/
+      Handler: kifu
+      Runtime: go1.x
+      Policies:
+        - !Ref KansousenTablePolicy
+      Environment:
+        Variables:
+          REGION: !Ref AWS::Region
+          TABLE_NAME: !Ref KifuTable
+
+  GraphQLPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+              - lambda:InvokeAsync
+            Resource:
+              - !GetAtt KifuDataSourceFunction.Arn
 
   GraphQLServiceRole:
     Type: AWS::IAM::Role
@@ -311,12 +342,11 @@ Resources:
     Type: AWS::AppSync::DataSource
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
-      Name: DataSourceDynamoDB
-      Type: AMAZON_DYNAMODB
+      Name: KifuDataSource
+      Type: AWS_LAMBDA
       ServiceRoleArn: !GetAtt GraphQLServiceRole.Arn
-      DynamoDBConfig:
-        AwsRegion: !Ref AWS::Region
-        TableName: !Ref KifuTable
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt KifuDataSourceFunction.Arn
 
   KifuResolver:
     Type: AWS::AppSync::Resolver
