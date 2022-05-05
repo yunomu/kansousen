@@ -11,8 +11,8 @@ import (
 
 	"github.com/yunomu/kansousen/appsync/lib/appsync"
 	"github.com/yunomu/kansousen/graphql/model"
+	"github.com/yunomu/kansousen/lib/kifudb"
 
-	"github.com/yunomu/kansousen/appsync/kifu/db"
 	"github.com/yunomu/kansousen/appsync/kifu/handler"
 )
 
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	var h appsync.Handler[*handler.Request, *model.Kifu] = handler.NewHandler(
-		db.NewDynamoDB(
+		kifudb.NewDynamoDB(
 			dynamodb.New(sess, aws.NewConfig().WithRegion(region)),
 			table,
 		),

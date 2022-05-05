@@ -4,15 +4,15 @@ import (
 	"context"
 	"strings"
 
-	"github.com/yunomu/kansousen/appsync/kifu/db"
 	"github.com/yunomu/kansousen/graphql/model"
+	"github.com/yunomu/kansousen/lib/kifudb"
 )
 
 type Handler struct {
-	db db.DB
+	db kifudb.DB
 }
 
-func NewHandler(db db.DB) *Handler {
+func NewHandler(db kifudb.DB) *Handler {
 	return &Handler{
 		db: db,
 	}
@@ -26,12 +26,12 @@ type Response struct {
 	KifuId string `json:"kifu_id"`
 }
 
-func selectionsToVariants(selectionSet []string) ([]db.Variant, []db.Type) {
-	var vars []db.Variant
-	vars = append(vars, db.Var_KifuId, db.Var_Type, db.Var_Seq)
+func selectionsToVariants(selectionSet []string) ([]kifudb.Variant, []kifudb.Type) {
+	var vars []kifudb.Variant
+	vars = append(vars, kifudb.Var_KifuId, kifudb.Var_Type, kifudb.Var_Seq)
 
-	var types []db.Type
-	types = append(types, db.Type_Kifu)
+	var types []kifudb.Type
+	types = append(types, kifudb.Type_Kifu)
 
 	for _, sl := range selectionSet {
 		ss := strings.Split(sl, "/")
@@ -44,52 +44,52 @@ func selectionsToVariants(selectionSet []string) ([]db.Variant, []db.Type) {
 		case "kifuId":
 			// default value
 		case "userId":
-			vars = append(vars, db.Var_UserId)
+			vars = append(vars, kifudb.Var_UserId)
 		case "timestamp":
-			vars = append(vars, db.Var_Timestamp)
+			vars = append(vars, kifudb.Var_Timestamp)
 		case "createdTs":
-			vars = append(vars, db.Var_CreatedTs)
+			vars = append(vars, kifudb.Var_CreatedTs)
 		case "startTs":
-			vars = append(vars, db.Var_StartTs)
+			vars = append(vars, kifudb.Var_StartTs)
 		case "endTs":
-			vars = append(vars, db.Var_EndTs)
+			vars = append(vars, kifudb.Var_EndTs)
 		case "handicap":
-			vars = append(vars, db.Var_Handicap)
+			vars = append(vars, kifudb.Var_Handicap)
 		case "note":
 			if l == 1 {
-				vars = append(vars, db.Var_Note)
+				vars = append(vars, kifudb.Var_Note)
 				break
 			}
 		case "otherFields":
 			switch l {
 			case 1:
-				types = append(types, db.Type_Other)
+				types = append(types, kifudb.Type_Other)
 				break
 			case 2:
 				switch ss[1] {
 				case "name":
-					vars = append(vars, db.Var_OtherName)
+					vars = append(vars, kifudb.Var_OtherName)
 				case "value":
-					vars = append(vars, db.Var_OtherValue)
+					vars = append(vars, kifudb.Var_OtherValue)
 				}
 			}
 		case "players":
 			switch l {
 			case 1:
-				types = append(types, db.Type_Player)
+				types = append(types, kifudb.Type_Player)
 			case 2:
 				switch ss[1] {
 				case "name":
-					vars = append(vars, db.Var_PlayerName)
+					vars = append(vars, kifudb.Var_PlayerName)
 				case "order":
-					vars = append(vars, db.Var_PlayerOrder)
+					vars = append(vars, kifudb.Var_PlayerOrder)
 				case "note":
-					vars = append(vars, db.Var_PlayerNote)
+					vars = append(vars, kifudb.Var_PlayerNote)
 				}
 			}
 		case "steps":
 			if l == 1 {
-				types = append(types, db.Type_Step)
+				types = append(types, kifudb.Type_Step)
 				break
 			}
 
@@ -97,36 +97,36 @@ func selectionsToVariants(selectionSet []string) ([]db.Variant, []db.Type) {
 			case "seq":
 				// default value
 			case "move":
-				vars = append(vars, db.Var_Move)
+				vars = append(vars, kifudb.Var_Move)
 			case "piece":
-				vars = append(vars, db.Var_Piece)
+				vars = append(vars, kifudb.Var_Piece)
 			case "position":
-				types = append(types, db.Type_Pos)
-				vars = append(vars, db.Var_Position)
+				types = append(types, kifudb.Type_Pos)
+				vars = append(vars, kifudb.Var_Position)
 			case "finished":
-				vars = append(vars, db.Var_Finished)
+				vars = append(vars, kifudb.Var_Finished)
 			case "timeSec":
-				vars = append(vars, db.Var_TimeSec)
+				vars = append(vars, kifudb.Var_TimeSec)
 			case "thinkSec":
-				vars = append(vars, db.Var_ThinkSec)
+				vars = append(vars, kifudb.Var_ThinkSec)
 			case "notes":
 				if l == 2 {
-					types = append(types, db.Type_StepNote)
+					types = append(types, kifudb.Type_StepNote)
 					break
 				}
 				switch ss[2] {
 				case "id":
-					vars = append(vars, db.Var_StepNoteId)
+					vars = append(vars, kifudb.Var_StepNoteId)
 				case "text":
-					vars = append(vars, db.Var_StepNoteText)
+					vars = append(vars, kifudb.Var_StepNoteText)
 				}
 			}
 		case "sfen":
 			if l != 1 {
 				break
 			}
-			types = append(types, db.Type_SFEN)
-			vars = append(vars, db.Var_Sfen)
+			types = append(types, kifudb.Type_SFEN)
+			vars = append(vars, kifudb.Var_Sfen)
 		}
 	}
 
@@ -147,8 +147,8 @@ func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request
 	stepNoteMap := make(map[int][]*model.StepNote)
 	for _, rec_ := range recs {
 		rec := rec_
-		switch db.Type(rec.Type) {
-		case db.Type_Kifu:
+		switch kifudb.Type(rec.Type) {
+		case kifudb.Type_Kifu:
 			kifu.KifuID = rec.KifuId
 			kifu.UserID = &rec.UserId
 			if t := rec.Timestamp; t != 0 {
@@ -174,7 +174,7 @@ func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request
 				kifu.Note = &s
 			}
 
-		case db.Type_Player:
+		case kifudb.Type_Player:
 			var player model.Player
 			player.Name = rec.PlayerName
 			if o := model.Order(rec.PlayerOrder); o.IsValid() {
@@ -185,7 +185,7 @@ func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request
 			}
 			kifu.Players = append(kifu.Players, &player)
 
-		case db.Type_Step:
+		case kifudb.Type_Step:
 			var step model.Step
 
 			step.Seq = int(rec.Seq)
@@ -207,17 +207,17 @@ func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request
 				step.ThinkSec = &i
 			}
 
-		case db.Type_SFEN:
+		case kifudb.Type_SFEN:
 			if t := rec.Sfen; len(t) != 0 {
 				kifu.Sfen = &t
 			}
 
-		case db.Type_Pos:
+		case kifudb.Type_Pos:
 			if t := rec.Position; len(t) != 0 {
 				posMap[int(rec.Seq)] = t
 			}
 
-		case db.Type_Other:
+		case kifudb.Type_Other:
 			var other model.OtherField
 			other.Name = rec.OtherName
 			if t := rec.OtherValue; len(t) != 0 {
@@ -225,7 +225,7 @@ func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request
 			}
 			kifu.OtherFields = append(kifu.OtherFields, &other)
 
-		case db.Type_StepNote:
+		case kifudb.Type_StepNote:
 			var stepNote model.StepNote
 			stepNote.ID = int(rec.StepNoteId)
 			if t := rec.StepNoteText; len(t) != 0 {
