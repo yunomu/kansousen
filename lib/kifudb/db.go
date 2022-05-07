@@ -144,5 +144,5 @@ func (t Type) isValid() bool {
 }
 
 type DB interface {
-	GetKifu(ctx context.Context, kifuId string, types []Type, vars []Variant) ([]*Record, error)
+	GetKifu(ctx context.Context, kifuId string, vars []Variant) ([]*Record, error)
 }

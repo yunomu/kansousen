@@ -201,7 +201,7 @@ Resources:
       AttributeDefinitions:
         - AttributeName: kifuId
           AttributeType: S
-        - AttributeName: var
+        - AttributeName: sk
           AttributeType: S
         - AttributeName: userId
           AttributeType: S
@@ -218,7 +218,7 @@ Resources:
       KeySchema:
         - AttributeName: kifuId
           KeyType: HASH
-        - AttributeName: var
+        - AttributeName: sk
           KeyType: RANGE
       GlobalSecondaryIndexes:
         - IndexName: Created

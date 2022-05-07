@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"strings"
 
 	"github.com/yunomu/kansousen/graphql/model"
 	"github.com/yunomu/kansousen/lib/kifudb"
@@ -26,117 +25,53 @@ type Response struct {
 	KifuId string `json:"kifu_id"`
 }
 
-func selectionsToVariants(selectionSet []string) ([]kifudb.Variant, []kifudb.Type) {
-	var vars []kifudb.Variant
-	vars = append(vars, kifudb.Var_KifuId, kifudb.Var_Type, kifudb.Var_Seq)
+var pathToVariantMap = map[string]kifudb.Variant{
+	"createdTs":         kifudb.Var_CreatedTs,
+	"startTs":           kifudb.Var_StartTs,
+	"endTs":             kifudb.Var_EndTs,
+	"handicap":          kifudb.Var_Handicap,
+	"note":              kifudb.Var_Note,
+	"otherFields/name":  kifudb.Var_OtherName,
+	"otherFields/value": kifudb.Var_OtherValue,
+	"players/name":      kifudb.Var_PlayerName,
+	"players/order":     kifudb.Var_PlayerOrder,
+	"players/note":      kifudb.Var_PlayerNote,
+	"steps/move":        kifudb.Var_Move,
+	"steps/piece":       kifudb.Var_Piece,
+	"steps/position":    kifudb.Var_Position,
+	"steps/finished":    kifudb.Var_Finished,
+	"steps/timeSec":     kifudb.Var_TimeSec,
+	"steps/thinkSec":    kifudb.Var_ThinkSec,
+	"steps/notes/id":    kifudb.Var_StepNoteId,
+	"steps/notes/text":  kifudb.Var_StepNoteText,
+	"sfen":              kifudb.Var_Sfen,
+}
 
-	var types []kifudb.Type
-	types = append(types, kifudb.Type_Kifu)
+func selectionsToVariants(selectionSet []string) []kifudb.Variant {
+	vars := []kifudb.Variant{
+		kifudb.Var_KifuId,
+		kifudb.Var_Type,
+		kifudb.Var_Seq,
+		kifudb.Var_UserId,
+		kifudb.Var_Timestamp,
+	}
 
 	for _, sl := range selectionSet {
-		ss := strings.Split(sl, "/")
-		l := len(ss)
-		if l == 0 {
+		v, ok := pathToVariantMap[sl]
+		if !ok {
 			continue
 		}
 
-		switch ss[0] {
-		case "kifuId":
-			// default value
-		case "userId":
-			vars = append(vars, kifudb.Var_UserId)
-		case "timestamp":
-			vars = append(vars, kifudb.Var_Timestamp)
-		case "createdTs":
-			vars = append(vars, kifudb.Var_CreatedTs)
-		case "startTs":
-			vars = append(vars, kifudb.Var_StartTs)
-		case "endTs":
-			vars = append(vars, kifudb.Var_EndTs)
-		case "handicap":
-			vars = append(vars, kifudb.Var_Handicap)
-		case "note":
-			if l == 1 {
-				vars = append(vars, kifudb.Var_Note)
-				break
-			}
-		case "otherFields":
-			switch l {
-			case 1:
-				types = append(types, kifudb.Type_Other)
-				break
-			case 2:
-				switch ss[1] {
-				case "name":
-					vars = append(vars, kifudb.Var_OtherName)
-				case "value":
-					vars = append(vars, kifudb.Var_OtherValue)
-				}
-			}
-		case "players":
-			switch l {
-			case 1:
-				types = append(types, kifudb.Type_Player)
-			case 2:
-				switch ss[1] {
-				case "name":
-					vars = append(vars, kifudb.Var_PlayerName)
-				case "order":
-					vars = append(vars, kifudb.Var_PlayerOrder)
-				case "note":
-					vars = append(vars, kifudb.Var_PlayerNote)
-				}
-			}
-		case "steps":
-			if l == 1 {
-				types = append(types, kifudb.Type_Step)
-				break
-			}
-
-			switch ss[1] {
-			case "seq":
-				// default value
-			case "move":
-				vars = append(vars, kifudb.Var_Move)
-			case "piece":
-				vars = append(vars, kifudb.Var_Piece)
-			case "position":
-				types = append(types, kifudb.Type_Pos)
-				vars = append(vars, kifudb.Var_Position)
-			case "finished":
-				vars = append(vars, kifudb.Var_Finished)
-			case "timeSec":
-				vars = append(vars, kifudb.Var_TimeSec)
-			case "thinkSec":
-				vars = append(vars, kifudb.Var_ThinkSec)
-			case "notes":
-				if l == 2 {
-					types = append(types, kifudb.Type_StepNote)
-					break
-				}
-				switch ss[2] {
-				case "id":
-					vars = append(vars, kifudb.Var_StepNoteId)
-				case "text":
-					vars = append(vars, kifudb.Var_StepNoteText)
-				}
-			}
-		case "sfen":
-			if l != 1 {
-				break
-			}
-			types = append(types, kifudb.Type_SFEN)
-			vars = append(vars, kifudb.Var_Sfen)
-		}
+		vars = append(vars, v)
 	}
 
-	return vars, types
+	return vars
 }
 
 func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request) (*model.Kifu, error) {
-	vars, types := selectionsToVariants(selectionSet)
+	vars := selectionsToVariants(selectionSet)
 
-	recs, err := h.db.GetKifu(ctx, req.Id, types, vars)
+	recs, err := h.db.GetKifu(ctx, req.Id, vars)
 	if err != nil {
 		return nil, err
 	}
