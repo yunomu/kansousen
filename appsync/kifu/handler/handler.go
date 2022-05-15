@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/yunomu/kansousen/graphql/model"
 	"github.com/yunomu/kansousen/lib/kifudb"
@@ -68,12 +69,15 @@ func selectionsToVariants(selectionSet []string) []kifudb.Variant {
 	return vars
 }
 
-func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request) (*model.Kifu, error) {
+func (h *Handler) Serve(ctx context.Context, userId string, selectionSet []string, req *Request) (*model.Kifu, error) {
 	vars := selectionsToVariants(selectionSet)
 
 	recs, err := h.db.GetKifu(ctx, req.Id, vars)
 	if err != nil {
 		return nil, err
+	}
+	if len(recs) == 0 {
+		return nil, errors.New("Not found")
 	}
 
 	var kifu model.Kifu
@@ -81,6 +85,10 @@ func (h *Handler) Serve(ctx context.Context, selectionSet []string, req *Request
 	posMap := make(map[int]string)
 	stepNoteMap := make(map[int][]*model.StepNote)
 	for _, rec_ := range recs {
+		if rec_.UserId != userId {
+			continue
+		}
+
 		rec := rec_
 		switch kifudb.Type(rec.Type) {
 		case kifudb.Type_Kifu:

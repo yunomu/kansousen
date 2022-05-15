@@ -3,6 +3,7 @@
   "operation": "Invoke",
   "payload": {
     "arguments": $util.toJson($context.arguments),
+    "user": $util.toJson($context.identity.sub),
     "selectionSet": $util.toJson($context.info.selectionSetList)
   }
 }
