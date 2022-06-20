@@ -1,0 +1,22 @@
+version: 0.2
+
+batch:
+  fast-fail: false
+  build-graph:
+    - identifier: prepare
+      ignore-failure: true
+    - identifier: api-build
+      depend-on: prepare
+      buildspec: ops/buildspec.yml
+    - identifier: api-deploy
+      depend-on: api-build
+      buildspec: ops/deploy/api.yml
+    - identifier: auth-deploy
+      depend-on: prepare
+      buildspec: ops/deploy/auth.yml
+
+phases:
+  pre_build:
+    commands:
+      - sam --version
+      - go version
